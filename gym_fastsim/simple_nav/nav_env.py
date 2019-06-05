@@ -40,7 +40,7 @@ class SimpleNavEnv(gym.Env):
 		self.robot = settings.robot()
 
 		
-		self.maxVel = 10
+		self.maxVel = 4 # Same as in the C++ sferes2 experiment
 		
 		lasers = self.robot.get_lasers()
 		n_lasers = len(lasers)
