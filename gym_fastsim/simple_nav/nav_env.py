@@ -36,6 +36,7 @@ class SimpleNavEnv(gym.Env):
 		settings = fs.Settings(path)
 		os.chdir(oldcwd)
 		
+		self.display = None
 		self.map = settings.map()
 		self.robot = settings.robot()
 
@@ -55,6 +56,16 @@ class SimpleNavEnv(gym.Env):
 		
 		self.observation_space = spaces.Box(low=np.array([0.]*n_lasers + [0.]*2), high=np.array([self.maxSensorRange]*n_lasers + [1.]*2), dtype=np.float32)
 		self.action_space = spaces.Box(low=-self.maxVel, high=self.maxVel, shape=(2,), dtype=np.float32)
+
+	def enable_display(self):
+		if not self.display:
+			self.display = fs.Display(self.map, self.robot)
+			self.display.update()
+
+	def disable_display(self):
+		if self.display:
+			del self.display
+			self.display = None
 
 	def get_robot_pos(self):
 		pos = self.robot.get_pos()
@@ -115,11 +126,12 @@ class SimpleNavEnv(gym.Env):
 		return self.get_all_sensors()
 
 	def render(self, mode='human', close=False):
-		#p=self.p.getBasePositionAndOrientation(self.robot)
-		#print("Robot position: "+str(p[0])+" heading: "+str(self.p.getEulerFromQuaternion(p[1])[2])+" Still="+str(self.still))
+		if self.display:
+			self.display.update()
 		pass
 
 	def close(self):
+		self.disable_display()
 		del self.robot
 		del self.map
 		pass
