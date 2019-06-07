@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 default_env = "assets/LS_maze_hard.xml"
 #default_env = "assets/example.xml"
 
+sticky_walls = True # default is True
+
 
 def sqdist(x,y):
 	return (x[0]-y[0])**2+(x[1]-y[1])**2
@@ -92,7 +94,7 @@ class SimpleNavEnv(gym.Env):
 		# Action is: [leftWheelVel, rightWheelVel]
 		[v1, v2] = action
 		
-		self.robot.move(np.clip(v1,-self.maxVel,self.maxVel),np.clip(v2,-self.maxVel,self.maxVel), self.map)
+		self.robot.move(np.clip(v1,-self.maxVel,self.maxVel),np.clip(v2,-self.maxVel,self.maxVel), self.map, sticky_walls)
 
 		sensors = self.get_all_sensors()
 		reward = self._get_reward()

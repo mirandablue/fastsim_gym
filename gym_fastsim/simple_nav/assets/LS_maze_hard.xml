@@ -3,8 +3,8 @@
   <display enable="true"/>
   <!-- world -->
   <map name="maze_hard.pbm" size="600"/>
-  <robot x="60" y="60" theta="45" diameter="20"/> <!-- 0.1*size, 0.1*size, pi/4 -->
-  <goal x="60" y="450" color="0" diameter="7"/> <!-- 0.1*size, 0.75*size -->
+  <robot x="60" y="450" theta="45" diameter="20"/> <!-- 0.1*size, 0.1*size, pi/4 -->
+  <goal x="60" y="60" color="0" diameter="7"/> <!-- 0.1*size, 0.75*size -->
   
   <!-- sensors -->
   <laser range="100" angle="45"/>
