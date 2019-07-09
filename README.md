@@ -1,7 +1,5 @@
 # Gym environment for pyfastsim
 
-No visualization.
-
 The default environment is:
 - Lehman & Stanley's hard maze (dimension 600x600)
 - Robot with 3 lasers at -pi/4, 0 and -pi/4, range 100, and two bumpers
