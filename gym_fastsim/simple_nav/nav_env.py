@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 default_env = "assets/LS_maze_hard.xml"
 #default_env = "assets/example.xml"
 
-sticky_walls = True # default is True
+sticky_walls = False # default is True in libfastsim... but false in the fastsim sferes2 module -> stick (haha) with that
 
 
 def sqdist(x,y):
