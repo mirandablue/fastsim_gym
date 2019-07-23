@@ -145,7 +145,7 @@ class SimpleNavEnv(gym.Env):
 			xx, yy = np.mgrid[:background.shape[0], :background.shape[1]]
 			circle = (xx - robot_pos[1]) ** 2 + (yy - robot_pos[0]) ** 2
 			robot = np.array(circle < robot_rad**2, dtype=float)
-			image = np.tile(np.expand_dims(background + robot, -1), (1, 1, 3)) # Make it RGB
+			image = np.tile(np.expand_dims(np.clip(background + robot, a_min=0., a_max=1.), -1), (1, 1, 3)) # Make it RGB
 			return image
 		
 		if self.display:
