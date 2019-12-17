@@ -25,17 +25,11 @@ def dist(x,y):
 	return math.sqrt(sqdist(x,y))
 
 class SimpleNavEnv(gym.Env):
-	def __init__(self,xml_env=None):
-		# Load XML
-		if not xml_env:
-			path = os.path.join(os.path.dirname(__file__), default_env)
-		else:
-			path = xml_env
-		
+	def __init__(self,xml_env):
 		# XML files typically have relative names wrt their own path. Make that work
 		oldcwd = os.getcwd()
-		os.chdir(os.path.dirname(path))
-		settings = fs.Settings(path)
+		os.chdir(os.path.dirname(xml_env))
+		settings = fs.Settings(xml_env)
 		os.chdir(oldcwd)
 		
 		self.display = None
