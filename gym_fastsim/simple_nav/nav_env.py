@@ -27,8 +27,11 @@ def dist(x,y):
 class SimpleNavEnv(gym.Env):
 	def __init__(self,xml_env):
 		# XML files typically have relative names wrt their own path. Make that work
+		xml_dir = os.path.dirname(xml_env)
+		if(xml_dir == ""):
+			xml_dir = "./"
 		oldcwd = os.getcwd()
-		os.chdir(os.path.dirname(xml_env))
+		os.chdir(xml_dir)
 		settings = fs.Settings(xml_env)
 		os.chdir(oldcwd)
 		
