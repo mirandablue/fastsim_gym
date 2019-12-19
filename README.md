@@ -15,5 +15,11 @@ The default environment is:
 
 See example_gym_fastsim.py
 
+## Miscellaneous
 
+The XML file describing the environment and robot must contain the path to the map file. The path can be absolute or relative to the location of the XML file.
 
+The maps must be
+* Binary PBM format
+* Square
+* With size divisible by 8
