@@ -24,8 +24,41 @@ def sqdist(x,y):
 def dist(x,y):
 	return math.sqrt(sqdist(x,y))
 
+
+def reward_binary_goal_based(navenv):
+	""" Reward of 1 is given when close enough to the goal. """
+	curpos = navenv.current_pos
+	if (dist(curpos,navenv.goalPos)<=navenv.goalRadius):
+		return 1.
+	else:
+		return 0.
+
+def reward_minus_energy(navenv):
+	""" Reward = minus sum of absolute values of motor orders"""
+	r = -(np.abs(navenv.v1_motor_order) + np.abs(navenv.v2_motor_order))
+	return r
+
+def reward_displacement(navenv):
+	""" Reward = distance to previous position"""
+	r = dist(navenv.current_pos, navenv.old_pos)
+	return r
+
+def no_reward(navenv):
+	""" No reward"""
+	return 0.
+
+
+reward_functions = { "binary_goalbased":reward_binary_goal_based,
+				"minimize_energy":reward_minus_energy,
+				"displacement":reward_displacement,
+				"none":no_reward,
+				None:no_reward}
+
+
+
 class SimpleNavEnv(gym.Env):
-	def __init__(self,xml_env):
+	def __init__(self,xml_env, reward_func="binary_goalbased"):
+		# Fastsim setup
 		# XML files typically contain relative names (for map) wrt their own path. Make that work
 		xml_dir, xml_file = os.path.split(xml_env)
 		if(xml_dir == ""):
@@ -46,8 +79,13 @@ class SimpleNavEnv(gym.Env):
 		n_lasers = len(lasers)
 		self.maxSensorRange = lasers[0].get_range() # Assume at least 1 laser ranger
 		
+		# State
 		self.initPos = self.get_robot_pos()
+		self.current_pos = self.get_robot_pos()
+		self.old_pos = self.get_robot_pos()
 
+		self.v1_motor_order = 0.
+		self.v2_motor_order = 0.
 		
 		self.goal = self.map.get_goals()[0] # Assume 1 goal
 		self.goalPos=[self.goal.get_x(),self.goal.get_y()]
@@ -55,6 +93,13 @@ class SimpleNavEnv(gym.Env):
 		
 		self.observation_space = spaces.Box(low=np.array([0.]*n_lasers + [0.]*2), high=np.array([self.maxSensorRange]*n_lasers + [1.]*2), dtype=np.float32)
 		self.action_space = spaces.Box(low=-self.maxVel, high=self.maxVel, shape=(2,), dtype=np.float32)
+		
+		# Reward
+		if(reward_func not in reward_functions):
+			raise RuntimeError("Unknown reward '%s'" % str(reward_func))
+		else:
+			self.reward_func = reward_functions[reward_func]
+		
 
 	def enable_display(self):
 		if not self.display:
@@ -91,12 +136,16 @@ class SimpleNavEnv(gym.Env):
 		# Action is: [leftWheelVel, rightWheelVel]
 		[v1, v2] = action
 		
-		self.robot.move(np.clip(v1,-self.maxVel,self.maxVel),np.clip(v2,-self.maxVel,self.maxVel), self.map, sticky_walls)
+		self.v1_motor_order = np.clip(v1,-self.maxVel,self.maxVel)
+		self.v2_motor_order = np.clip(v2,-self.maxVel,self.maxVel)
+		
+		self.robot.move(self.v1_motor_order, self.v2_motor_order, self.map, sticky_walls)
 
 		sensors = self.get_all_sensors()
 		reward = self._get_reward()
-
-		p = self.get_robot_pos()
+		
+		self.old_pos = self.current_pos
+		self.current_pos = self.get_robot_pos()
 		
 		#if(sqdist(p,self.roldpos)<0.001**2):
 		#	self.still=self.still+1
@@ -106,22 +155,20 @@ class SimpleNavEnv(gym.Env):
 		#episode_over = self.still>=self.still_limit
 		episode_over = False
 
-		dist_obj = dist(p, self.goalPos)
+		dist_obj = dist(self.current_pos, self.goalPos)
 
-		return sensors, reward, episode_over, {"dist_obj":dist_obj, "robot_pos":p}
+		return sensors, reward, episode_over, {"dist_obj":dist_obj, "robot_pos":self.current_pos}
 
 
 	def _get_reward(self):
-		""" Reward is given when close enough to the goal. """
-		p = self.get_robot_pos()
-		if (dist(p,self.goalPos)<=self.goalRadius):
-			return 1.
-		else:
-			return 0.
+		return self.reward_func(self) # Use reward extraction function
 		
 	def reset(self):
 		p = fs.Posture(*self.initPos)
 		self.robot.set_pos(p)
+		self.current_pos = self.get_robot_pos()
+		self.v1_motor_order = 0.
+		self.v2_motor_order = 0.
 		return self.get_all_sensors()
 
 	def render(self, mode='human', close=False):
