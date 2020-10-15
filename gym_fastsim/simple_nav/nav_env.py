@@ -57,7 +57,7 @@ reward_functions = { "binary_goalbased":reward_binary_goal_based,
 
 
 class SimpleNavEnv(gym.Env):
-	def __init__(self,xml_env, reward_func="binary_goalbased"):
+	def __init__(self,xml_env, reward_func="binary_goalbased",display=False):
 		# Fastsim setup
 		# XML files typically contain relative names (for map) wrt their own path. Make that work
 		xml_dir, xml_file = os.path.split(xml_env)
@@ -68,10 +68,14 @@ class SimpleNavEnv(gym.Env):
 		settings = fs.Settings(xml_file)
 		os.chdir(oldcwd)
 		
-		self.display = None
+
 		self.map = settings.map()
 		self.robot = settings.robot()
 
+		if(display):
+			self.display = fs.Display(self.map, self.robot)
+		else:
+			self.display = None
 		
 		self.maxVel = 4 # Same as in the C++ sferes2 experiment
 		
