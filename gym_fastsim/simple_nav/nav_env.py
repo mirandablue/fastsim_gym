@@ -57,7 +57,7 @@ reward_functions = { "binary_goalbased":reward_binary_goal_based,
 
 
 class SimpleNavEnv(gym.Env):
-	def __init__(self,xml_env, reward_func="binary_goalbased",display=False):
+	def __init__(self,xml_env, reward_func="binary_goalbased",display=False, light_sensor_range=200., light_sensor_mode="realistic"):
 		# Fastsim setup
 		# XML files typically contain relative names (for map) wrt their own path. Make that work
 		xml_dir, xml_file = os.path.split(xml_env)
@@ -79,9 +79,22 @@ class SimpleNavEnv(gym.Env):
 		
 		self.maxVel = 4 # Same as in the C++ sferes2 experiment
 		
+		# Lasers
 		lasers = self.robot.get_lasers()
 		n_lasers = len(lasers)
-		self.maxSensorRange = lasers[0].get_range() # Assume at least 1 laser ranger
+		if(n_lasers > 0):
+			self.maxSensorRange = lasers[0].get_range() # Assume at least 1 laser ranger
+		else:
+			self.maxSensorRange = 0.
+		
+		#Light sensors
+		self.ls_mode = light_sensor_mode
+		lightsensors = self.robot.get_light_sensors()
+		n_lightsensors = len(lightsensors)
+		if(n_lightsensors > 0):
+			self.maxLightSensorRange = light_sensor_range # Assume at least 1 laser ranger
+		else:
+			self.maxLightSensorRange = 0.
 		
 		# State
 		self.initPos = self.get_robot_pos()
@@ -95,7 +108,7 @@ class SimpleNavEnv(gym.Env):
 		self.goalPos=[self.goal.get_x(),self.goal.get_y()]
 		self.goalRadius = self.goal.get_diam()/2.
 		
-		self.observation_space = spaces.Box(low=np.array([0.]*n_lasers + [0.]*2), high=np.array([self.maxSensorRange]*n_lasers + [1.]*2), dtype=np.float32)
+		self.observation_space = spaces.Box(low=np.array([0.]*n_lasers + [0.]*2 + [0. if (self.ls_mode == "realistic") else -1]*n_lightsensors), high=np.array([self.maxSensorRange]*n_lasers + [1. if (self.ls_mode == "realistic") else self.maxLightSensorRange]*2 + [1.]*n_lightsensors, dtype=np.float32))
 		self.action_space = spaces.Box(low=-self.maxVel, high=self.maxVel, shape=(2,), dtype=np.float32)
 		
 		# Reward
@@ -129,12 +142,33 @@ class SimpleNavEnv(gym.Env):
 				out.append(np.clip(r,0.,self.maxSensorRange))
 		return out
 
+	def get_lightsensors(self):
+		out = list()
+		for ls in self.robot.get_light_sensors():
+			r = ls.get_distance()
+			if(self.ls_mode == "realistic"):
+				# r is -1 if no light, dist if light detected 
+				# We want the output to be a "realistic" light sensor :
+				# - 0 if no light (no target in field or out of range)
+				# - (1-d/maxRange)**2 if light detectted
+				if((r < 0) or (r > self.maxLightSensorRange)): # Out of range, or not in angular range
+					out.append(0.)
+				else:
+					out.append((1. - r/self.maxLightSensorRange)**2)
+			elif(self.ls_mode == "raw"):
+				out.append(r)
+			else:
+				raise RuntimeError("Unknown LS mode: %s" % self.ls_mode)
+
+		return out
+
+
 	def get_bumpers(self):
 		return [float(self.robot.get_left_bumper()), float(self.robot.get_right_bumper())]
 
 
 	def get_all_sensors(self):
-		return self.get_laserranges() + self.get_bumpers()
+		return self.get_laserranges() + self.get_bumpers() + self.get_lightsensors()
 
 	def step(self, action):
 		# Action is: [leftWheelVel, rightWheelVel]
