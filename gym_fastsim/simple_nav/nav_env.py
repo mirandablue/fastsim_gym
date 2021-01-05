@@ -72,7 +72,7 @@ class SimpleNavEnv(gym.Env):
 		self.map = settings.map()
 		self.robot = settings.robot()
 
-		if(display):
+		if(render):
 			self.display = fs.Display(self.map, self.robot)
 		else:
 			self.display = None
