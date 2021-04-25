@@ -7,6 +7,7 @@ from gym.utils import seeding
 import math
 import random
 import logging
+import netpbmfile
 
 import pyfastsim as fs
 
@@ -210,6 +211,25 @@ class SimpleNavEnv(gym.Env):
 		return self.get_all_sensors()
 
 	def render(self, mode='human', close=False):
+		if mode=='rgb_array':
+			# Load background
+			if 'maze_hard' in default_env:
+				filepath = os.path.join(os.path.dirname(__file__), 'assets/maze_hard.pbm')
+			else:
+				filepath = os.path.join(os.path.dirname(__file__), 'assets/cuisine.pbm')
+			with open(filepath, 'rb') as f:
+				background = netpbmfile.imread(f)
+			# Get robot position
+			robot_pos = self.get_robot_pos()
+			robot_pos = np.array(robot_pos[:2]) * np.array(background.shape) / 600 # This is to scale the position to the image size
+			robot_rad = 10
+			# Draw robot
+			xx, yy = np.mgrid[:background.shape[0], :background.shape[1]]
+			circle = (xx - robot_pos[1]) ** 2 + (yy - robot_pos[0]) ** 2
+			robot = np.array(circle < robot_rad**2, dtype=float)
+			image = np.tile(np.expand_dims(np.clip(background + robot, a_min=0., a_max=1.), -1), (1, 1, 3)) # Make it RGB
+			return image
+		
 		if self.display:
 			self.display.update()
 		pass
