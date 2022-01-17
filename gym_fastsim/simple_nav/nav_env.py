@@ -202,9 +202,21 @@ class SimpleNavEnv(gym.Env):
 		return self.reward_func(self) # Use reward extraction function
 		
 	def reset(self):
-		p = fs.Posture(*self.initPos)
+                self.reset2(None)
+
+	def reset2(self, init_pos=None):
+		#print("Reset with an init_pose="+str(init_pos))
+		if (init_pos is None):
+			p = fs.Posture(*self.initPos)
+		else:
+			p = fs.Posture(*init_pos)
+			#print("Initial position set to : "+str(init_pos))
+		self.robot.reinit()
 		self.robot.set_pos(p)
 		self.current_pos = self.get_robot_pos()
+		self.step([0,0])
+		self.roldpos=self.get_robot_pos()
+		self.still=0
 		self.v1_motor_order = 0.
 		self.v2_motor_order = 0.
 		return self.get_all_sensors()
