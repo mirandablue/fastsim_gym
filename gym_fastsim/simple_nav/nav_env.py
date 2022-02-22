@@ -202,7 +202,7 @@ class SimpleNavEnv(gym.Env):
         return self.reward_func(self) # Use reward extraction function
         
     def reset(self):
-        self.reset2(None)
+        return self.reset2(None)
 
     def reset2(self, init_pos=None):
         #print("Reset with an init_pose="+str(init_pos))
